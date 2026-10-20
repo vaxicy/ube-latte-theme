@@ -89,35 +89,38 @@ def compose(size, geom, colors, props):
     # palette strip: one long band across the full width, split into segments
     # (user request 2026-10-20: long strips instead of a tile grid, so the
     #  composition no longer leaves the left side empty)
-    # five distinct palette colours, ordered pale -> deep so the strip reads as
-    # one continuous ramp (this theme has toolbar == button_background, and the
-    # blush tone would disappear against the blush background if repeated)
-    band_colors = [rgb(colors["ntp_background"]), rgb(colors["button_background"]),
-                   rgb(colors["button_background_secondary"]), rgb(colors["frame"]),
-                   rgb(colors["ntp_link"])]
-    band_y, band_h, gap = geom["band_y"], geom["band_h"], geom["band_gap"]
-    seg_w = (RIGHT - M - gap * (len(band_colors) - 1)) / len(band_colors)
-    assert seg_w > band_h, "band segments should read as long strips"
-    assert band_y + band_h <= H - 12, "palette band too close to the canvas bottom"
-    # a very soft shadow keeps the palest segments readable against a same-hue
+    # tall vertical palette strips on the right (user request 2026-10-20):
+    # five distinct colours, pale -> deep, running nearly the full canvas height
+    # so the composition stays balanced against the text column.
+    strip_colors = [rgb(colors["ntp_background"]), rgb(colors["button_background"]),
+                    rgb(colors["button_background_secondary"]), rgb(colors["frame"]),
+                    rgb(colors["ntp_link"])]
+    n = len(strip_colors)
+    block_w, sgap = geom["block_w"], geom["strip_gap"]
+    sw = (block_w - sgap * (n - 1)) / n
+    top, bottom = geom["strip_top"], geom["strip_bottom"]
+    assert sw > 0, "invalid strip width"
+    assert top >= 24 and bottom <= H - 24, "strips too close to the canvas edge"
+    bx = int(round(RIGHT - block_w))
+    assert bx >= M + 180, "strips would overlap the text column"
+
+    # a very soft shadow keeps the palest strips readable against a same-hue
     # background without drawing an outline
     shadow = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     sd = ImageDraw.Draw(shadow)
-    x = M
-    for _ in band_colors:
-        sd.rounded_rectangle([x, band_y + 3, x + seg_w, band_y + band_h + 3],
-                             radius=band_h / 2, fill=ink + (26,))
-        x += seg_w + gap
-    shadow = shadow.filter(ImageFilter.GaussianBlur(5))
+    x = bx
+    for _ in strip_colors:
+        sd.rounded_rectangle([x, top + 4, x + sw, bottom + 4], radius=sw / 2, fill=ink + (28,))
+        x += sw + sgap
+    shadow = shadow.filter(ImageFilter.GaussianBlur(6))
     img = Image.alpha_composite(img.convert("RGBA"), shadow).convert("RGB")
     d = ImageDraw.Draw(img)
 
-    x = M
-    for col in band_colors:
-        d.rounded_rectangle([x, band_y, x + seg_w, band_y + band_h],
-                            radius=band_h / 2, fill=col)
-        x += seg_w + gap
-    assert x - gap <= RIGHT + 0.5, "palette band overflows the right margin"
+    x = bx
+    for col in strip_colors:
+        d.rounded_rectangle([x, top, x + sw, bottom], radius=sw / 2, fill=col)
+        x += sw + sgap
+    assert x - sgap <= RIGHT + 0.5, "palette strips overflow the right margin"
 
     lsize = geom["logo"]
     logo = Image.open("logo/logo.png").convert("RGBA").resize((lsize, lsize), Image.LANCZOS)
@@ -148,7 +151,8 @@ def compose(size, geom, colors, props):
            geom["cta"], font=f_cta, fill=cta_txt)
     assert btn_y + btn_h <= H - 12, "CTA button too close to the canvas bottom"
     assert btn_x + btn_w <= RIGHT, "CTA button overflows the right margin"
-    return img, {"btn": (btn_x, btn_y, btn_w, btn_h), "band": (M, band_y, RIGHT - M, band_h)}
+    return img, {"btn": (btn_x, btn_y, btn_w, btn_h),
+                 "strips": (bx, top, block_w, bottom - top)}
 
 
 LARGE = {
@@ -160,7 +164,7 @@ LARGE = {
     "chip_size": 15, "chip_h": 34, "chip_gap": 34, "chip_gap_x": 12,
     "cta": "Try It Now", "cta_size": 20, "cta_w": 210, "cta_h": 54,
     "cta_y": 366, "cta_beside": True,
-    "band_y": 452, "band_h": 36, "band_gap": 8,
+    "block_w": 300, "strip_gap": 10, "strip_top": 104, "strip_bottom": 456,
 }
 
 SMALL = {
@@ -172,7 +176,7 @@ SMALL = {
     "chip_size": 10, "chip_h": 22, "chip_gap": 12, "chip_gap_x": 8,
     "cta": "Try It Now", "cta_size": 13, "cta_w": 118, "cta_h": 36,
     "cta_y": 0, "cta_gap": 16, "cta_beside": False,
-    "band_y": 228, "band_h": 22, "band_gap": 5,
+    "block_w": 132, "strip_gap": 6, "strip_top": 56, "strip_bottom": 224,
 }
 
 
@@ -186,7 +190,7 @@ def main():
         img, boxes = compose(size, geom, c, p)
         out = "%s/%dx%d.png" % (OUT_DIR, size[0], size[1])
         save_png(img, out)
-        print("saved:", out, img.size, img.mode, "cta:", boxes["btn"], "band:", boxes["band"])
+        print("saved:", out, img.size, img.mode, "cta:", boxes["btn"], "strips:", boxes["strips"])
 
 
 if __name__ == "__main__":
