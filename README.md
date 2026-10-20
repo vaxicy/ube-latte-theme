@@ -76,7 +76,7 @@ Upload the resulting `.zip` to the [Chrome Web Store developer dashboard](https:
 
 Ready to paste into the store listing (also kept in `store-assets/store-description.txt`):
 
-> Ube Latte is a creamy lavender-purple Chrome theme inspired by ube latte: a soft lilac frame, a blush-pink toolbar, and a milky New Tab Page with a plum Google logo that matches the palette. Deep plum ink keeps every tab, bookmark and toolbar icon crisp on the light chrome, while links pick up a deeper ube purple. A single-row shortcut layout keeps the page clean and uncluttered. Solid colors only, no wallpaper — soft, sweet, and easy on the eyes.
+> Ube Latte is a creamy lavender-purple Chrome theme: a soft lilac frame, a blush-pink toolbar, and a milky New Tab Page with a plum Google logo that matches the palette. Deep plum ink keeps every tab, bookmark and toolbar icon readable on the light chrome. Solid colors only, no wallpaper — soft, sweet, and easy on the eyes.
 
 ## Project structure
 
