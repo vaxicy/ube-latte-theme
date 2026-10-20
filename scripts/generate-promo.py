@@ -89,38 +89,38 @@ def compose(size, geom, colors, props):
     # palette strip: one long band across the full width, split into segments
     # (user request 2026-10-20: long strips instead of a tile grid, so the
     #  composition no longer leaves the left side empty)
-    # tall vertical palette strips on the right (user request 2026-10-20):
-    # five distinct colours, pale -> deep, running nearly the full canvas height
-    # so the composition stays balanced against the text column.
-    strip_colors = [rgb(colors["ntp_background"]), rgb(colors["button_background"]),
+    # big palette blocks spread across the full width (user request 2026-10-20:
+    # larger, blocky, distributed — not crowded on the right). Five distinct
+    # colours ordered pale -> deep, sitting on a shelf under the text column.
+    block_colors = [rgb(colors["ntp_background"]), rgb(colors["button_background"]),
                     rgb(colors["button_background_secondary"]), rgb(colors["frame"]),
                     rgb(colors["ntp_link"])]
-    n = len(strip_colors)
-    block_w, sgap = geom["block_w"], geom["strip_gap"]
-    sw = (block_w - sgap * (n - 1)) / n
-    top, bottom = geom["strip_top"], geom["strip_bottom"]
-    assert sw > 0, "invalid strip width"
-    assert top >= 24 and bottom <= H - 24, "strips too close to the canvas edge"
-    bx = int(round(RIGHT - block_w))
-    assert bx >= M + 180, "strips would overlap the text column"
+    n = len(block_colors)
+    row_y, row_h, bgap = geom["row_y"], geom["row_h"], geom["row_gap"]
+    bw = (RIGHT - M - bgap * (n - 1)) / n
+    radius = min(bw, row_h) * 0.22
+    assert bw > row_h * 0.8, "blocks should read as blocks, not thin strips"
+    assert row_y + row_h <= H - 14, "block row too close to the canvas bottom"
+    assert row_y >= geom["cta_y"] + geom["cta_h"] + 8, "block row overlaps the CTA"
 
-    # a very soft shadow keeps the palest strips readable against a same-hue
+    # a very soft shadow keeps the palest blocks readable against a same-hue
     # background without drawing an outline
     shadow = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     sd = ImageDraw.Draw(shadow)
-    x = bx
-    for _ in strip_colors:
-        sd.rounded_rectangle([x, top + 4, x + sw, bottom + 4], radius=sw / 2, fill=ink + (28,))
-        x += sw + sgap
-    shadow = shadow.filter(ImageFilter.GaussianBlur(6))
+    x = M
+    for _ in block_colors:
+        sd.rounded_rectangle([x, row_y + 5, x + bw, row_y + row_h + 5],
+                             radius=radius, fill=ink + (28,))
+        x += bw + bgap
+    shadow = shadow.filter(ImageFilter.GaussianBlur(7))
     img = Image.alpha_composite(img.convert("RGBA"), shadow).convert("RGB")
     d = ImageDraw.Draw(img)
 
-    x = bx
-    for col in strip_colors:
-        d.rounded_rectangle([x, top, x + sw, bottom], radius=sw / 2, fill=col)
-        x += sw + sgap
-    assert x - sgap <= RIGHT + 0.5, "palette strips overflow the right margin"
+    x = M
+    for col in block_colors:
+        d.rounded_rectangle([x, row_y, x + bw, row_y + row_h], radius=radius, fill=col)
+        x += bw + bgap
+    assert x - bgap <= RIGHT + 0.5, "palette blocks overflow the right margin"
 
     lsize = geom["logo"]
     logo = Image.open("logo/logo.png").convert("RGBA").resize((lsize, lsize), Image.LANCZOS)
@@ -143,7 +143,7 @@ def compose(size, geom, colors, props):
 
     f_cta = font(geom["cta_size"], True)
     btn_w, btn_h = geom["cta_w"], geom["cta_h"]
-    btn_x = M
+    btn_x = (RIGHT - btn_w) if geom.get("cta_right") else M
     btn_y = geom["cta_y"] if geom["cta_beside"] else cy + geom["chip_h"] + geom["cta_gap"]
     d.rounded_rectangle([btn_x, btn_y, btn_x + btn_w, btn_y + btn_h], radius=btn_h // 2, fill=cta_bg)
     tw = text_w(d, geom["cta"], f_cta)
@@ -152,7 +152,7 @@ def compose(size, geom, colors, props):
     assert btn_y + btn_h <= H - 12, "CTA button too close to the canvas bottom"
     assert btn_x + btn_w <= RIGHT, "CTA button overflows the right margin"
     return img, {"btn": (btn_x, btn_y, btn_w, btn_h),
-                 "strips": (bx, top, block_w, bottom - top)}
+                 "blocks": (M, row_y, RIGHT - M, row_h)}
 
 
 LARGE = {
@@ -163,8 +163,8 @@ LARGE = {
     "chips": ["Solid colors", "Lilac & plum", "Easy on the eyes"],
     "chip_size": 15, "chip_h": 34, "chip_gap": 34, "chip_gap_x": 12,
     "cta": "Try It Now", "cta_size": 20, "cta_w": 210, "cta_h": 54,
-    "cta_y": 366, "cta_beside": True,
-    "block_w": 300, "strip_gap": 10, "strip_top": 104, "strip_bottom": 456,
+    "cta_y": 225, "cta_beside": True, "cta_right": True,
+    "row_y": 330, "row_h": 170, "row_gap": 18,
 }
 
 SMALL = {
@@ -175,8 +175,8 @@ SMALL = {
     "chips": ["Solid colors", "Lilac & plum"],
     "chip_size": 10, "chip_h": 22, "chip_gap": 12, "chip_gap_x": 8,
     "cta": "Try It Now", "cta_size": 13, "cta_w": 118, "cta_h": 36,
-    "cta_y": 0, "cta_gap": 16, "cta_beside": False,
-    "block_w": 132, "strip_gap": 6, "strip_top": 56, "strip_bottom": 224,
+    "cta_y": 136, "cta_gap": 16, "cta_beside": True, "cta_right": True,
+    "row_y": 224, "row_h": 40, "row_gap": 7,
 }
 
 
@@ -190,7 +190,7 @@ def main():
         img, boxes = compose(size, geom, c, p)
         out = "%s/%dx%d.png" % (OUT_DIR, size[0], size[1])
         save_png(img, out)
-        print("saved:", out, img.size, img.mode, "cta:", boxes["btn"], "strips:", boxes["strips"])
+        print("saved:", out, img.size, img.mode, "cta:", boxes["btn"], "blocks:", boxes["blocks"])
 
 
 if __name__ == "__main__":
