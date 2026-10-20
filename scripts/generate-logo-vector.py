@@ -26,7 +26,7 @@ os.chdir(str(ROOT))                      # relative paths only (non-ASCII path s
 SIZE = 128
 CELL = 512
 PREVIEW = 256
-SELECTED = "01"
+SELECTED = "02"
 CAND_DIR = Path("logo/candidates")
 LOGO_OUT = Path("logo/logo.png")
 
@@ -112,9 +112,7 @@ SVG_02 = svg_open("""
 </g>
 <path d="M82 64 h96 l-10 140 q-1 14 -16 14 h-44 q-15 0 -16 -14 z" fill="none" stroke="%s"
       stroke-opacity=".55" stroke-width="4"/>
-<path d="M150 58 l30 -22" stroke="%s" stroke-width="11" stroke-linecap="round"/>
-<path d="M96 76 q-4 40 -2 78" stroke="#FFFFFF" stroke-opacity=".55" stroke-width="6" stroke-linecap="round" fill="none"/>
-""" % (PINK, MAUVE, LILAC, SHADOW, INK, LILAC, MAUVE, PINK_DEEP))
+""" % (PINK, MAUVE, LILAC, SHADOW, INK, LILAC, MAUVE))
 
 SVG_03 = svg_open("""
 <defs>

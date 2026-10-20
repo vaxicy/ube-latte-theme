@@ -86,39 +86,38 @@ def compose(size, geom, colors, props):
     cta_bg = rgb(colors["frame"])
     cta_txt = rgb(colors["tab_text"])
 
-    # palette tiles: a 3x2 grid of rounded swatches with a soft shadow
-    # (replaces the old vertical paint bars — user request 2026-10-20)
-    # order chosen so no two identical swatches sit side by side (this theme has
-    # toolbar == button_background and ntp_button_background == button_secondary)
-    tile_colors = [rgb(colors["ntp_background"]), rgb(colors["button_background_secondary"]),
-                   rgb(colors["frame"]), rgb(props["ntp_button_background"]),
-                   rgb(colors["toolbar"]), rgb(colors["ntp_link"])]
-    cols = 3
-    block_w = geom["block_w"]
-    tgap = block_w * 0.05
-    tw = (block_w - tgap * (cols - 1)) / cols
-    th = tw * geom["tile_ratio"]
-    block_h = th * 2 + tgap
-    bx, by = int(round(RIGHT - block_w)), geom["bar_y"]
-    assert bx + block_w <= RIGHT, "palette tiles overflow the right margin"
-    assert by + block_h <= H - 12, "palette tiles too close to the canvas bottom"
-
+    # palette strip: one long band across the full width, split into segments
+    # (user request 2026-10-20: long strips instead of a tile grid, so the
+    #  composition no longer leaves the left side empty)
+    # five distinct palette colours, ordered pale -> deep so the strip reads as
+    # one continuous ramp (this theme has toolbar == button_background, and the
+    # blush tone would disappear against the blush background if repeated)
+    band_colors = [rgb(colors["ntp_background"]), rgb(colors["button_background"]),
+                   rgb(colors["button_background_secondary"]), rgb(colors["frame"]),
+                   rgb(colors["ntp_link"])]
+    band_y, band_h, gap = geom["band_y"], geom["band_h"], geom["band_gap"]
+    seg_w = (RIGHT - M - gap * (len(band_colors) - 1)) / len(band_colors)
+    assert seg_w > band_h, "band segments should read as long strips"
+    assert band_y + band_h <= H - 12, "palette band too close to the canvas bottom"
+    # a very soft shadow keeps the palest segments readable against a same-hue
+    # background without drawing an outline
     shadow = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     sd = ImageDraw.Draw(shadow)
-    for i in range(len(tile_colors)):
-        r, c = divmod(i, cols)
-        x0 = bx + c * (tw + tgap)
-        y0 = by + r * (th + tgap)
-        sd.rounded_rectangle([x0, y0 + 4, x0 + tw, y0 + th + 4],
-                             radius=tw * 0.26, fill=(22, 38, 26, 24))
-    shadow = shadow.filter(ImageFilter.GaussianBlur(6))
+    x = M
+    for _ in band_colors:
+        sd.rounded_rectangle([x, band_y + 3, x + seg_w, band_y + band_h + 3],
+                             radius=band_h / 2, fill=ink + (26,))
+        x += seg_w + gap
+    shadow = shadow.filter(ImageFilter.GaussianBlur(5))
     img = Image.alpha_composite(img.convert("RGBA"), shadow).convert("RGB")
     d = ImageDraw.Draw(img)
-    for i, col in enumerate(tile_colors):
-        r, c = divmod(i, cols)
-        x0 = bx + c * (tw + tgap)
-        y0 = by + r * (th + tgap)
-        d.rounded_rectangle([x0, y0, x0 + tw, y0 + th], radius=tw * 0.26, fill=col)
+
+    x = M
+    for col in band_colors:
+        d.rounded_rectangle([x, band_y, x + seg_w, band_y + band_h],
+                            radius=band_h / 2, fill=col)
+        x += seg_w + gap
+    assert x - gap <= RIGHT + 0.5, "palette band overflows the right margin"
 
     lsize = geom["logo"]
     logo = Image.open("logo/logo.png").convert("RGBA").resize((lsize, lsize), Image.LANCZOS)
@@ -137,7 +136,7 @@ def compose(size, geom, colors, props):
     for label in geom["chips"]:
         w = draw_chip(d, cx, cy, geom["chip_h"], label, f_chip, chip_bg, ink)
         cx += w + geom["chip_gap_x"]
-    assert cx - geom["chip_gap_x"] <= bx - 24, "chips collide with the palette bars"
+    assert cx - geom["chip_gap_x"] <= RIGHT, "chip row overflows the right margin"
 
     f_cta = font(geom["cta_size"], True)
     btn_w, btn_h = geom["cta_w"], geom["cta_h"]
@@ -149,8 +148,7 @@ def compose(size, geom, colors, props):
            geom["cta"], font=f_cta, fill=cta_txt)
     assert btn_y + btn_h <= H - 12, "CTA button too close to the canvas bottom"
     assert btn_x + btn_w <= RIGHT, "CTA button overflows the right margin"
-    assert btn_x + btn_w <= bx - 20, "CTA button collides with the palette bars"
-    return img, {"btn": (btn_x, btn_y, btn_w, btn_h), "tiles": (bx, by, block_w, round(block_h))}
+    return img, {"btn": (btn_x, btn_y, btn_w, btn_h), "band": (M, band_y, RIGHT - M, band_h)}
 
 
 LARGE = {
@@ -162,7 +160,7 @@ LARGE = {
     "chip_size": 15, "chip_h": 34, "chip_gap": 34, "chip_gap_x": 12,
     "cta": "Try It Now", "cta_size": 20, "cta_w": 210, "cta_h": 54,
     "cta_y": 366, "cta_beside": True,
-    "block_w": 300, "tile_ratio": 1.44, "bar_y": 130,
+    "band_y": 452, "band_h": 36, "band_gap": 8,
 }
 
 SMALL = {
@@ -174,7 +172,7 @@ SMALL = {
     "chip_size": 10, "chip_h": 22, "chip_gap": 12, "chip_gap_x": 8,
     "cta": "Try It Now", "cta_size": 13, "cta_w": 118, "cta_h": 36,
     "cta_y": 0, "cta_gap": 16, "cta_beside": False,
-    "block_w": 132, "tile_ratio": 1.44, "bar_y": 68,
+    "band_y": 228, "band_h": 22, "band_gap": 5,
 }
 
 
@@ -188,7 +186,7 @@ def main():
         img, boxes = compose(size, geom, c, p)
         out = "%s/%dx%d.png" % (OUT_DIR, size[0], size[1])
         save_png(img, out)
-        print("saved:", out, img.size, img.mode, "cta:", boxes["btn"], "tiles:", boxes["tiles"])
+        print("saved:", out, img.size, img.mode, "cta:", boxes["btn"], "band:", boxes["band"])
 
 
 if __name__ == "__main__":

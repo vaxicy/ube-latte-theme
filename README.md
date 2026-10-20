@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/vaxicy/ube-latte-theme/main/logo/logo.png" width="128" alt="Ube Latte Theme logo">
+  <img src="https://raw.githubusercontent.com/vaxicy/ube-latte-theme/main/logo/logo.png?v=2" width="128" alt="Ube Latte Theme logo">
 </p>
 
 <h1 align="center">Ube Latte Theme</h1>
@@ -11,7 +11,7 @@
 Ube Latte pairs a soft lilac frame with a blush-pink toolbar, then opens onto a milky New Tab Page with a plum Google logo that matches the palette. Deep plum ink keeps every tab, bookmark and toolbar icon crisp on the light chrome, links take a deeper ube purple, and a single-row shortcut layout keeps the New Tab Page clean.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/vaxicy/ube-latte-theme/main/store-assets/promo/1400x560.png" alt="Ube Latte Theme promo" width="700">
+  <img src="https://raw.githubusercontent.com/vaxicy/ube-latte-theme/main/store-assets/promo/1400x560.png?v=2" alt="Ube Latte Theme promo" width="700">
 </p>
 
 ## Design Concept
@@ -44,7 +44,7 @@ Ube Latte comes from a lavender-to-pink palette: a soft lilac, a whisper-pink ba
 </p>
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/vaxicy/ube-latte-theme/main/store-assets/screenshots/en/screenshot-2-palette.png" alt="Ube Latte palette" width="640">
+  <img src="https://raw.githubusercontent.com/vaxicy/ube-latte-theme/main/store-assets/screenshots/en/screenshot-2-palette.png?v=2" alt="Ube Latte palette" width="640">
 </p>
 
 ## Installation
